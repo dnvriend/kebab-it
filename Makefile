@@ -47,7 +47,7 @@ build: ## Build package
 	uv build
 
 install-global: ## Install globally with uv tool
-	uv tool install .
+	uv tool install . --reinstall
 
 uninstall-global: ## Uninstall global installation
 	uv tool uninstall kebab-it

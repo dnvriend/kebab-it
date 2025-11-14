@@ -66,17 +66,64 @@ def main(patterns: tuple[str, ...], execute: bool, verbose: bool, force: bool) -
     """Rename files to kebab-case using glob patterns.
 
     By default, runs in PREVIEW MODE (dry-run). Use --execute to actually rename files.
+    The tool converts filenames to lowercase with hyphens, preserving file extensions.
 
-    PATTERN can be any glob pattern like:
-      - *.md (all markdown files in current directory)
-      - **/*.py (all Python files recursively)
-      - ~/Documents/*.txt (files in home directory)
+    Conversion examples:
+      - "My File Name.md" → "my-file-name.md"
+      - "Study_Notes_2024.md" → "study-notes-2024.md"
+      - "MO - 1.2 - Strategie.md" → "mo-1-2-strategie.md"
 
     Examples:
-      kebab-it "*.md"                    # Preview changes
-      kebab-it "*.md" --execute          # Actually rename
-      kebab-it "**/*.py" --verbose       # Preview with details
-      kebab-it "*.txt" --execute --force # Rename and overwrite
+
+    \b
+        # Preview changes for all markdown files in current directory
+        kebab-it "*.md"
+
+    \b
+        # Actually rename markdown files (requires --execute flag)
+        kebab-it "*.md" --execute
+
+    \b
+        # Preview with detailed output showing each rename operation
+        kebab-it "*.md" --verbose
+
+    \b
+        # Recursively rename all Python files in subdirectories
+        kebab-it "**/*.py" --execute
+
+    \b
+        # Multiple patterns can be provided
+        kebab-it "*.md" "*.txt" --execute
+
+    \b
+        # Rename files in home directory
+        kebab-it "~/Documents/*.txt" --execute
+
+    \b
+        # Rename and overwrite if target file already exists
+        kebab-it "*.txt" --execute --force
+
+    \b
+        # Complex: rename multiple file types with verbose output
+        kebab-it "**/*.md" "**/*.txt" \\
+            --execute \\
+            --verbose \\
+            --force
+
+    \b
+    Output Format:
+        The tool displays a summary with statistics:
+
+        Summary:
+          Total files matched: 42
+          Successfully renamed: 38
+          Skipped (no change): 2
+          Skipped (exists): 1
+          Errors: 1
+
+        Exit codes:
+        - 0: Success (all files processed without errors)
+        - 1: Error (no files found or errors during renaming)
     """
     # Expand all glob patterns
     all_files: list[Path] = []
