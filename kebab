@@ -1,0 +1,226 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = [
+#     "click",
+#     "python-slugify",
+# ]
+# ///
+
+"""
+Kebab CLI - Convert filenames to kebab-case
+
+A command-line tool for renaming files to kebab-case format.
+Supports glob patterns and provides dry-run mode.
+"""
+
+import os
+import sys
+from pathlib import Path
+from typing import List
+
+import click
+from slugify import slugify
+
+
+def to_kebab_case(filename: str) -> str:
+    """
+    Convert filename to kebab-case, preserving the extension.
+
+    Args:
+        filename: Original filename
+
+    Returns:
+        Kebab-case filename with original extension
+    """
+    # Split filename and extension
+    name_part = Path(filename).stem
+    ext_part = Path(filename).suffix
+
+    # Convert to kebab-case using slugify
+    kebab_name = slugify(name_part, separator='-', lowercase=True)
+
+    # Recombine with extension
+    return f"{kebab_name}{ext_part}"
+
+
+def expand_glob_pattern(pattern: str, verbose: bool = False) -> List[Path]:
+    """
+    Expand a glob pattern to a list of file paths.
+
+    Handles:
+    - Environment variable expansion ($HOME, ${VAR})
+    - Tilde expansion (~)
+    - Glob patterns (*, **, ?, [])
+    - Direct file paths (no wildcards)
+
+    Args:
+        pattern: File path or glob pattern
+        verbose: Enable verbose output
+
+    Returns:
+        List of Path objects matching the pattern
+    """
+    def print_verbose(msg: str):
+        if verbose:
+            click.echo(f"[DEBUG] {msg}", err=True)
+
+    # Step 1: Expand environment variables ($HOME, ${VAR}, etc.)
+    expanded_pattern = os.path.expandvars(pattern)
+    print_verbose(f"After env expansion: {expanded_pattern}")
+
+    # Step 2: Expand ~ (tilde)
+    expanded_pattern = str(Path(expanded_pattern).expanduser())
+    print_verbose(f"After ~ expansion: {expanded_pattern}")
+
+    # Step 3: Check if pattern contains wildcards
+    has_wildcards = any(c in expanded_pattern for c in ['*', '?', '['])
+
+    if not has_wildcards:
+        # No wildcards - treat as direct file path
+        file_path = Path(expanded_pattern).resolve()
+        if file_path.exists() and file_path.is_file():
+            print_verbose(f"Direct file: {file_path}")
+            return [file_path]
+        else:
+            print_verbose(f"File not found: {file_path}")
+            return []
+
+    # Step 4: Split base directory and glob pattern
+    # Find first wildcard to determine base directory
+    first_wildcard_pos = min(
+        (expanded_pattern.find(c) for c in ['*', '?', '['] if expanded_pattern.find(c) != -1),
+        default=len(expanded_pattern)
+    )
+
+    # Find last / before first wildcard
+    base_end = expanded_pattern.rfind('/', 0, first_wildcard_pos)
+
+    if base_end == -1:
+        # No / before wildcard, use current directory
+        base_dir = Path.cwd()
+        glob_pattern = expanded_pattern
+    else:
+        # Split at last / before wildcard
+        base_dir_str = expanded_pattern[:base_end]
+        glob_pattern = expanded_pattern[base_end + 1:]  # Skip the /
+
+        # Resolve relative paths in base directory to absolute
+        base_dir = Path(base_dir_str).resolve()
+
+    print_verbose(f"Base dir: {base_dir}")
+    print_verbose(f"Glob pattern: {glob_pattern}")
+
+    # Step 5: Expand glob pattern
+    try:
+        matched_paths = list(base_dir.glob(glob_pattern))
+        print_verbose(f"Glob found {len(matched_paths)} items")
+    except Exception as e:
+        print_verbose(f"Glob failed: {str(e)}")
+        return []
+
+    # Step 6: Filter to only include files (not directories)
+    files = [f for f in matched_paths if f.is_file()]
+    print_verbose(f"After filtering: {len(files)} files")
+
+    return files
+
+
+@click.command()
+@click.argument('pattern', required=True)
+@click.option(
+    '-n',
+    '--dry-run',
+    is_flag=True,
+    help='Show what would be renamed without actually renaming files'
+)
+@click.option(
+    '-v',
+    '--verbose',
+    is_flag=True,
+    help='Enable verbose output showing pattern expansion details'
+)
+@click.option(
+    '--recursive',
+    '-r',
+    is_flag=True,
+    help='Process files recursively (use ** in pattern for explicit control)'
+)
+def main(pattern: str, dry_run: bool, verbose: bool, recursive: bool):
+    """
+    Convert filenames to kebab-case.
+
+    PATTERN: File path or glob pattern (e.g., '*.md', '**/*.py', 'file.txt')
+
+    Examples:
+
+        kebab "*.md"                    # Rename all .md files in current dir
+        kebab "**/*.py"                 # Rename all .py files recursively
+        kebab "~/docs/*.txt"            # Rename with tilde expansion
+        kebab "$HOME/notes/*.md"        # Rename with env var expansion
+        kebab "file with spaces.md" -n  # Dry run to preview changes
+    """
+    # Expand glob pattern
+    files = expand_glob_pattern(pattern, verbose=verbose)
+
+    if not files:
+        click.echo(f"No files found matching pattern: {pattern}", err=True)
+        sys.exit(1)
+
+    if verbose:
+        click.echo(f"\nFound {len(files)} file(s) to process:\n", err=True)
+
+    # Track stats
+    renamed_count = 0
+    skipped_count = 0
+
+    # Process each file
+    for file_path in files:
+        original_name = file_path.name
+        new_name = to_kebab_case(original_name)
+
+        # Skip if already in kebab-case
+        if original_name == new_name:
+            skipped_count += 1
+            if verbose:
+                click.echo(f"[SKIP] {file_path} (already kebab-case)", err=True)
+            continue
+
+        # Build new path
+        new_path = file_path.parent / new_name
+
+        # Check if target file already exists
+        if new_path.exists():
+            click.echo(
+                f"[ERROR] Cannot rename '{original_name}' → '{new_name}': "
+                f"Target file already exists",
+                err=True
+            )
+            continue
+
+        # Show what will be done
+        if dry_run:
+            click.echo(f"[DRY-RUN] {file_path.parent}/{original_name} → {new_name}")
+            renamed_count += 1
+        else:
+            try:
+                file_path.rename(new_path)
+                click.echo(f"[RENAMED] {file_path.parent}/{original_name} → {new_name}")
+                renamed_count += 1
+            except Exception as e:
+                click.echo(
+                    f"[ERROR] Failed to rename '{original_name}': {str(e)}",
+                    err=True
+                )
+
+    # Summary
+    click.echo(f"\n{'Would rename' if dry_run else 'Renamed'}: {renamed_count}", err=True)
+    click.echo(f"Skipped (already kebab-case): {skipped_count}", err=True)
+    click.echo(f"Total files processed: {len(files)}", err=True)
+
+    if dry_run and renamed_count > 0:
+        click.echo("\nRun without --dry-run to actually rename files", err=True)
+
+
+if __name__ == "__main__":
+    main()

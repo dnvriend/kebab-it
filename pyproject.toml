@@ -1,0 +1,47 @@
+[project]
+name = "kebab-it"
+version = "0.1.0"
+description = "CLI tool to rename files to kebab-case using glob patterns"
+requires-python = ">=3.14"
+dependencies = [
+    "click>=8.1.7",
+    "python-slugify>=8.0.1",
+]
+authors = [
+    {name = "Dennis Vriend"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+
+[project.scripts]
+kebab-it = "kebab_it.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "mypy>=1.7.0",
+    "pytest>=7.4.0",
+    "bandit>=1.7.0",
+    "pip-audit>=2.6.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+exclude = [".claude"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = []
+
+[tool.mypy]
+python_version = "3.14"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+strict = true
