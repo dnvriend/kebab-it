@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/assets/logo.png" alt="kebab-it logo" width="200">
+</p>
+
 # kebab-it
 
 [![Python Version](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
@@ -79,6 +83,46 @@ uv tool install .
 
 ```bash
 kebab-it --version
+```
+
+### Shell Completion
+
+`kebab-it` supports shell completion for zsh and bash, making it easier to use the CLI with tab completion.
+
+#### Quick Install (Recommended)
+
+```bash
+# From the project directory
+./scripts/install-completion.sh
+```
+
+The script will:
+- Detect your shell (zsh or bash)
+- Add the completion configuration to your shell config file
+- Provide instructions to activate it
+
+#### Manual Installation
+
+**For zsh** (add to `~/.zshrc`):
+```bash
+eval "$(_KEBAB_IT_COMPLETE=zsh_source kebab-it)"
+```
+
+**For bash** (add to `~/.bashrc`):
+```bash
+eval "$(_KEBAB_IT_COMPLETE=bash_source kebab-it)"
+```
+
+After adding the line, reload your shell:
+```bash
+source ~/.zshrc  # for zsh
+source ~/.bashrc # for bash
+```
+
+#### Uninstall Completion
+
+```bash
+./scripts/install-completion.sh uninstall
 ```
 
 ## Usage

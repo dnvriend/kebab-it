@@ -42,7 +42,7 @@ kebab-it [OPTIONS] PATTERN [PATTERN...]
 ### Options
 
 - `--execute` / `-e` - Actually rename files (default is preview/dry-run mode)
-- `--verbose` / `-v` - Show detailed output
+- `--verbose` / `-v` - Multi-level verbosity (use `-v` for INFO, `-vv` for DEBUG, `-vvv` for TRACE)
 - `--force` / `-f` - Overwrite existing files (only with --execute)
 - `--help` / `-h` - Show help message
 - `--version` - Show version
@@ -103,24 +103,42 @@ Summary:
 - Invalid glob pattern - exit with error
 - Target exists - skip and report (unless `--force`)
 
+## Features
+
+- ✅ Kebab-case file renaming with glob patterns
+- ✅ Safe by default (dry-run/preview mode)
+- ✅ Multi-level verbosity logging (`-v`, `-vv`, `-vvv`)
+- ✅ Shell completion for zsh and bash
+- ✅ Type-safe with mypy strict mode
+- ✅ Comprehensive statistics reporting
+- ✅ Security scanning (bandit, pip-audit, trufflehog)
+
 ## Project Structure
 
 ```
 kebab-it/
+├── .github/
+│   └── assets/
+│       └── logo.png         # Project logo (256x256)
 ├── kebab_it/
 │   ├── __init__.py
-│   ├── cli.py           # Click CLI entry point
-│   ├── renamer.py       # Core renaming logic
-│   └── stats.py         # Statistics tracking
+│   ├── cli.py               # Click CLI entry point
+│   ├── renamer.py           # Core renaming logic
+│   ├── stats.py             # Statistics tracking
+│   └── logging_config.py    # Multi-level logging configuration
+├── scripts/
+│   └── install-completion.sh # Shell completion installer
+├── docs/
+│   └── shell-completion.md  # Shell completion documentation
 ├── tests/
 │   ├── __init__.py
 │   ├── test_cli.py
 │   ├── test_renamer.py
 │   └── test_stats.py
-├── pyproject.toml       # Project configuration
-├── README.md            # User documentation
-├── CLAUDE.md            # This file
-├── Makefile             # Development commands
+├── pyproject.toml           # Project configuration
+├── README.md                # User documentation
+├── CLAUDE.md                # This file
+├── Makefile                 # Development commands
 └── .gitignore
 ```
 
@@ -186,6 +204,24 @@ uv tool install .
 ```
 
 After installation, `kebab-it` command is available globally.
+
+### Shell Completion
+
+Install shell completion for enhanced CLI experience:
+
+```bash
+# Automatic installation (detects shell)
+./scripts/install-completion.sh
+
+# Uninstall
+./scripts/install-completion.sh uninstall
+```
+
+Supports:
+- Zsh (full support)
+- Bash (requires 4.4+)
+
+See `docs/shell-completion.md` for detailed documentation.
 
 ### Local development
 

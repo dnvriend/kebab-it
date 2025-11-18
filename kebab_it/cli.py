@@ -11,7 +11,10 @@ from pathlib import Path
 
 import click
 
+from kebab_it.logging_config import get_logger, setup_logging
 from kebab_it.renamer import rename_files
+
+logger = get_logger(__name__)
 
 
 def expand_glob_pattern(pattern: str) -> list[Path]:
@@ -52,8 +55,8 @@ def expand_glob_pattern(pattern: str) -> list[Path]:
 @click.option(
     "--verbose",
     "-v",
-    is_flag=True,
-    help="Show detailed output",
+    count=True,
+    help="Enable verbose output (use -v for INFO, -vv for DEBUG, -vvv for TRACE)",
 )
 @click.option(
     "--force",
@@ -62,7 +65,7 @@ def expand_glob_pattern(pattern: str) -> list[Path]:
     help="Overwrite existing files (only with --execute)",
 )
 @click.version_option(version="0.1.0")
-def main(patterns: tuple[str, ...], execute: bool, verbose: bool, force: bool) -> None:
+def main(patterns: tuple[str, ...], execute: bool, verbose: int, force: bool) -> None:
     """Rename files to kebab-case using glob patterns.
 
     By default, runs in PREVIEW MODE (dry-run). Use --execute to actually rename files.
@@ -84,8 +87,12 @@ def main(patterns: tuple[str, ...], execute: bool, verbose: bool, force: bool) -
         kebab-it "*.md" --execute
 
     \b
-        # Preview with detailed output showing each rename operation
-        kebab-it "*.md" --verbose
+        # Preview with INFO logging showing high-level operations
+        kebab-it "*.md" -v
+
+    \b
+        # Preview with DEBUG logging showing detailed operations
+        kebab-it "*.md" -vv
 
     \b
         # Recursively rename all Python files in subdirectories
@@ -104,10 +111,10 @@ def main(patterns: tuple[str, ...], execute: bool, verbose: bool, force: bool) -
         kebab-it "*.txt" --execute --force
 
     \b
-        # Complex: rename multiple file types with verbose output
+        # Complex: rename multiple file types with DEBUG logging
         kebab-it "**/*.md" "**/*.txt" \\
             --execute \\
-            --verbose \\
+            -vv \\
             --force
 
     \b
@@ -125,6 +132,11 @@ def main(patterns: tuple[str, ...], execute: bool, verbose: bool, force: bool) -
         - 0: Success (all files processed without errors)
         - 1: Error (no files found or errors during renaming)
     """
+    # Setup logging based on verbosity level
+    setup_logging(verbose)
+    logger.debug(f"Verbosity level: {verbose}")
+    logger.debug(f"Patterns provided: {patterns}")
+
     # Expand all glob patterns
     all_files: list[Path] = []
     for pattern in patterns:
